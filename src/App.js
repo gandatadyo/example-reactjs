@@ -1,32 +1,51 @@
-import { Fragment, useState } from 'react';
+import { createElement, Fragment, useState, createRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
 import './App.css';
 
 
 const widthDrawer = '250px'
 const listMenu = [
-  { NameMenu: 'Dashboard' },
+  { NameMenu: 'Dashboard', path: '/dashboard' },
   {
     NameMenu: 'Master',
     Items: [
-      { NameMenu: 'Product' }, { NameMenu: 'Customer' }, { NameMenu: 'Supplier' }
+      { NameMenu: 'Product', path: '/product' },
+      { NameMenu: 'Customer', path: '/customer' },
+      { NameMenu: 'Supplier', path: '/supplier' }
     ]
   },
   { NameMenu: 'Trasnaction' },
   { NameMenu: 'Report' },
 ]
+function disableActiveListMenu() {
+  const element = document.querySelectorAll('.item-menu-custom1');
+  for (let i = 0; i < element.length; i++) {
+    element[i].classList.remove('active')
+  }
+}
 function AppSideBar({ children }) {
   const [open, setOpen] = useState(true)
+  const navigate = useNavigate()
 
   const handleClick = (status) => {
     setOpen(status)
   }
 
   const listMenuChild = (itemsMenu) => {
+
     return <Fragment>
       <div className='list-group' aria-label='list-menu'>
         {itemsMenu.map((item, index) => {
-          return <div key={index} className='list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }}>
+          const element = createRef()
+          let clickListener = () => { }
+          if (item.path != undefined) {
+            clickListener = () => {
+              disableActiveListMenu()
+              element.current.classList.add('active')
+              navigate(item.path)
+            }
+          }
+          return <div ref={element} key={index} className='item-menu-custom1 list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }} onClick={clickListener}>
             <b className='ms-4'>{item.NameMenu}</b>
           </div>
         })}
@@ -49,18 +68,38 @@ function AppSideBar({ children }) {
           {listMenu.map((item, index) => {
             const itemsMenu = item.Items || []
             if (itemsMenu.length > 0) {
+              // with child node
               const idCollapce = `menu-collapse-${item.NameMenu.trim()}`
               return <Fragment key={index}>
                 <button className='list-group-item list-group-item-action border-0' data-bs-toggle="collapse" data-bs-target={`#${idCollapce}`} >
-                  <b>{item.NameMenu}</b>
+                  <div className='d-flex align-items-center'>
+                    <span class="material-symbols-outlined me-2">
+                      check_circle
+                    </span>
+                    <b>{item.NameMenu}</b>
+                  </div>
                 </button>
                 <div className="collapse" id={idCollapce}>
                   {listMenuChild(itemsMenu)}
                 </div>
               </Fragment>
             } else {
-              return <div key={index} className='list-group-item list-group-item-action border-0'>
-                <b>{item.NameMenu}</b>
+              const element = createRef()
+              let clickListener = () => { }
+              if (item.path != undefined) {
+                clickListener = () => {
+                  disableActiveListMenu()
+                  element.current.classList.add('active')
+                  navigate(item.path)
+                }
+              }
+              return <div ref={element} key={index} className='item-menu-custom1 list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }} onClick={clickListener}>
+                <div className='d-flex align-items-center'>
+                  <span class="material-symbols-outlined me-2">
+                    check_circle
+                  </span>
+                  <b>{item.NameMenu}</b>
+                </div>
               </div>
             }
           })}
