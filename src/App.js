@@ -1,7 +1,41 @@
-import { createElement, Fragment, useState, createRef } from 'react';
+import { createElement, Fragment, useState, createRef, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
 import './App.css';
 
+function useMediaQuery() {
+  const [windowSize, setWindowSize] = useState({
+    width: undefined,
+    height: undefined,
+    typeSize: undefined,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      let typeSize = ''
+      if (window.innerWidth <= 320) {
+        typeSize = 'xs'
+      } else if (window.innerWidth <= 427) {
+        typeSize = 'sm'
+      } else if (window.innerWidth <= 768) {
+        typeSize = 'md'
+      } else if (window.innerWidth <= 1440) {
+        typeSize = 'lg'
+      } else {
+        typeSize = 'xl'
+      }
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        typeSize: typeSize,
+      });
+    }
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return windowSize;
+}
 
 const widthDrawer = '250px'
 const listMenu = [
@@ -25,6 +59,7 @@ function disableActiveListMenu() {
 }
 function AppSideBar({ children }) {
   const [open, setOpen] = useState(true)
+  const size = useMediaQuery();
   const navigate = useNavigate()
 
   const handleClick = (status) => {
@@ -53,81 +88,163 @@ function AppSideBar({ children }) {
     </Fragment>
   }
 
-  return <div className='d-flex' style={{ height: '100vh' }}>
-    <div className='border border-1' aria-label='sidebar' style={{
-      width: widthDrawer,
-      // backgroundColor: 'blue',
-      marginLeft: (open) ? '0px' : '-' + widthDrawer,
-      transition: 'all 0.2s'
-    }}>
-      <div className='p-3'>
-        <div className='mb-1' style={{ padding: '8px' }} aria-label='main-title'>
-          Main Menu
-        </div>
-        <div className='list-group' aria-label='list-menu'>
-          {listMenu.map((item, index) => {
-            const itemsMenu = item.Items || []
-            if (itemsMenu.length > 0) {
-              // with child node
-              const idCollapce = `menu-collapse-${item.NameMenu.trim()}`
-              return <Fragment key={index}>
-                <button className='list-group-item list-group-item-action border-0' data-bs-toggle="collapse" data-bs-target={`#${idCollapce}`} >
-                  <div className='d-flex align-items-center'>
-                    <span class="material-symbols-outlined me-2">
-                      check_circle
-                    </span>
-                    <b>{item.NameMenu}</b>
+  return (size.typeSize !== 'lg')
+    ? <Fragment>
+      {/* mobile size */}
+      <div className='d-flex' style={{ height: '100vh' }}>
+        <div className='border border-1' aria-label='sidebar' style={{
+          width: widthDrawer,
+          // backgroundColor: 'blue',
+          marginLeft: (open) ? '0px' : '-' + widthDrawer,
+          transition: 'all 0.2s'
+        }}>
+          <div className='p-3'>
+            <div className='mb-1' style={{ padding: '8px' }} aria-label='main-title'>
+              Main Menu
+            </div>
+            <div className='list-group' aria-label='list-menu'>
+              {listMenu.map((item, index) => {
+                const itemsMenu = item.Items || []
+                if (itemsMenu.length > 0) {
+                  // with child node
+                  const idCollapce = `menu-collapse-${item.NameMenu.trim()}`
+                  return <Fragment key={index}>
+                    <button className='list-group-item list-group-item-action border-0' data-bs-toggle="collapse" data-bs-target={`#${idCollapce}`} >
+                      <div className='d-flex align-items-center'>
+                        <span className="material-symbols-outlined me-2">
+                          check_circle
+                        </span>
+                        <b>{item.NameMenu}</b>
+                      </div>
+                    </button>
+                    <div className="collapse" id={idCollapce}>
+                      {listMenuChild(itemsMenu)}
+                    </div>
+                  </Fragment>
+                } else {
+                  const element = createRef()
+                  let clickListener = () => { }
+                  if (item.path != undefined) {
+                    clickListener = () => {
+                      disableActiveListMenu()
+                      element.current.classList.add('active')
+                      navigate(item.path)
+                    }
+                  }
+                  return <div ref={element} key={index} className='item-menu-custom1 list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }} onClick={clickListener}>
+                    <div className='d-flex align-items-center'>
+                      <span className="material-symbols-outlined me-2">
+                        check_circle
+                      </span>
+                      <b>{item.NameMenu}</b>
+                    </div>
                   </div>
-                </button>
-                <div className="collapse" id={idCollapce}>
-                  {listMenuChild(itemsMenu)}
-                </div>
-              </Fragment>
-            } else {
-              const element = createRef()
-              let clickListener = () => { }
-              if (item.path != undefined) {
-                clickListener = () => {
-                  disableActiveListMenu()
-                  element.current.classList.add('active')
-                  navigate(item.path)
                 }
-              }
-              return <div ref={element} key={index} className='item-menu-custom1 list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }} onClick={clickListener}>
-                <div className='d-flex align-items-center'>
-                  <span class="material-symbols-outlined me-2">
-                    check_circle
-                  </span>
-                  <b>{item.NameMenu}</b>
-                </div>
-              </div>
-            }
-          })}
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <div className='flex-grow-1' aria-label='main'>
-      <div className='bg-light border border-1 d-flex align-items-center p-2' aria-label='navbar'>
-        <div className='flex-grow-1'>
-          <button className='btn btn-light d-flex p-2' style={{ borderWidth: '0px' }} onClick={() => handleClick(!open)}>
-            <span className="material-symbols-outlined">
-              menu
-            </span>
-          </button>
-        </div>
+        <div className='flex-grow-1' aria-label='main'>
+          <div className='bg-light border border-1 d-flex align-items-center p-2' aria-label='navbar'>
+            <div className='flex-grow-1'>
+              <button className='btn btn-light d-flex p-2' style={{ borderWidth: '0px' }} onClick={() => handleClick(!open)}>
+                <span className="material-symbols-outlined">
+                  menu
+                </span>
+              </button>
+            </div>
 
-        <div className='d-flex'>
-          <button className='btn btn-light d-flex p-2 me-2' style={{ borderWidth: '0px' }}>
-            <span className="material-symbols-outlined">
-              notifications
-            </span>
-          </button>
-          <img src="https://miro.medium.com/fit/c/176/176/0*jkljDcqSZkRzPWIN" className="rounded" alt="..." style={{ height: '40px' }} />
+            <div className='d-flex'>
+              <button className='btn btn-light d-flex p-2 me-2' style={{ borderWidth: '0px' }}>
+                <span className="material-symbols-outlined">
+                  notifications
+                </span>
+              </button>
+              <img src="https://miro.medium.com/fit/c/176/176/0*jkljDcqSZkRzPWIN" className="rounded" alt="..." style={{ height: '40px' }} />
+            </div>
+          </div>
+          {children}
         </div>
       </div>
-      {children}
-    </div>
-  </div>
+    </Fragment>
+    : <Fragment>
+      {/* laptop size */}
+      <div className='d-flex' style={{ height: '100vh' }}>
+        <div className='border border-1' aria-label='sidebar' style={{
+          width: widthDrawer,
+          // backgroundColor: 'blue',
+          marginLeft: (open) ? '0px' : '-' + widthDrawer.substring(0, -2),
+          transition: 'all 0.2s'
+        }}>
+          <div className='p-3'>
+            <div className='mb-1' style={{ padding: '8px' }} aria-label='main-title'>
+              Main Menu
+            </div>
+            <div className='list-group' aria-label='list-menu'>
+              {listMenu.map((item, index) => {
+                const itemsMenu = item.Items || []
+                if (itemsMenu.length > 0) {
+                  // with child node
+                  const idCollapce = `menu-collapse-${item.NameMenu.trim()}`
+                  return <Fragment key={index}>
+                    <button className='list-group-item list-group-item-action border-0' data-bs-toggle="collapse" data-bs-target={`#${idCollapce}`} >
+                      <div className='d-flex align-items-center'>
+                        <span className="material-symbols-outlined me-2">
+                          check_circle
+                        </span>
+                        <b>{item.NameMenu}</b>
+                      </div>
+                    </button>
+                    <div className="collapse" id={idCollapce}>
+                      {listMenuChild(itemsMenu)}
+                    </div>
+                  </Fragment>
+                } else {
+                  const element = createRef()
+                  let clickListener = () => { }
+                  if (item.path != undefined) {
+                    clickListener = () => {
+                      disableActiveListMenu()
+                      element.current.classList.add('active')
+                      navigate(item.path)
+                    }
+                  }
+                  return <div ref={element} key={index} className='item-menu-custom1 list-group-item list-group-item-action border-0' style={{ cursor: 'pointer' }} onClick={clickListener}>
+                    <div className='d-flex align-items-center'>
+                      <span className="material-symbols-outlined me-2">
+                        check_circle
+                      </span>
+                      <b>{item.NameMenu}</b>
+                    </div>
+                  </div>
+                }
+              })}
+            </div>
+          </div>
+        </div>
+        <div className='flex-grow-1' aria-label='main'>
+          <div className='bg-light border border-1 d-flex align-items-center p-2' aria-label='navbar'>
+            <div className='flex-grow-1'>
+              <button className='btn btn-light d-flex p-2' style={{ borderWidth: '0px' }} onClick={() => handleClick(!open)}>
+                <span className="material-symbols-outlined">
+                  menu
+                </span>
+              </button>
+            </div>
+
+            <div className='d-flex'>
+              <button className='btn btn-light d-flex p-2 me-2' style={{ borderWidth: '0px' }}>
+                <span className="material-symbols-outlined">
+                  notifications
+                </span>
+              </button>
+              <img src="https://miro.medium.com/fit/c/176/176/0*jkljDcqSZkRzPWIN" className="rounded" alt="..." style={{ height: '40px' }} />
+            </div>
+          </div>
+          {children}
+        </div>
+      </div>
+    </Fragment>
 }
 
 function AppLogin() {
@@ -174,9 +291,15 @@ function AppRegister() {
 }
 
 function MainProduct() {
-  return <div>
-    Product
-  </div>
+  const size = useMediaQuery();
+
+  return <Fragment>
+    {'200px'.substring(0, -2)}
+    Media Query
+    {size.width}px /
+    {size.height}px -
+    {size.typeSize} typesize
+  </Fragment>
 }
 
 function AppMain() {
